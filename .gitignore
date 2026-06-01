@@ -4,3 +4,6 @@ venv/
 .DS_Store
 .idea/
 .vscode/
+.pytest_cache/
+allure-results/
+allure-report/

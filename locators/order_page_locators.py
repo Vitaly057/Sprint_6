@@ -1,5 +1,6 @@
 from selenium.webdriver.common.by import By
 
+
 class OrderPageLocators:
     # Первая страница (Для кого самокат)
     NAME_FIELD = (By.XPATH, ".//input[@placeholder='* Имя']")
@@ -15,8 +16,14 @@ class OrderPageLocators:
 
     # Вторая страница (Про аренду)
     DATE_FIELD = (By.XPATH, ".//input[@placeholder='* Когда привезти самокат']")
+    DATEPICKER = (By.CSS_SELECTOR, ".react-datepicker")
     DATEPICKER_DAY = (By.XPATH, "//div[contains(@class, 'react-datepicker')]//td[@data-day='{}']")
     RENTAL_PERIOD_DROPDOWN = (By.CSS_SELECTOR, "div.Dropdown-control")
+    DROPDOWN_MENU = (By.CSS_SELECTOR, "div.Dropdown-menu")
+    RENTAL_PERIOD_OPTION = (
+        By.XPATH,
+        "//div[contains(@class, 'Dropdown-option') and normalize-space()='{}']",
+    )
     COLOR_BLACK = (By.ID, "black")
     COLOR_GREY = (By.ID, "grey")
     COMMENT_FIELD = (By.XPATH, ".//input[@placeholder='Комментарий для курьера']")

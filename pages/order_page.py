@@ -1,40 +1,34 @@
 import allure
 from selenium.common.exceptions import TimeoutException
-from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support import expected_conditions as EC
 
-from pages.base_page import BasePage
 from locators.order_page_locators import OrderPageLocators
+from pages.base_page import BasePage
 
 
 class OrderPage(BasePage):
 
+    @allure.step("Проверка загрузки страницы заказа")
     def is_page_loaded(self):
-        # Более лаконичный способ проверить наличие элемента
-        return self.wait.until(EC.presence_of_element_located(OrderPageLocators.NAME_FIELD)) is not None
+        return self.is_element_present(OrderPageLocators.NAME_FIELD)
 
+    @allure.step("Проверка загрузки шага «Про аренду»")
     def is_rental_step_loaded(self):
-        return self.wait.until(EC.presence_of_element_located(OrderPageLocators.DATE_FIELD)) is not None
+        return self.is_element_visible(OrderPageLocators.DATE_FIELD)
 
     @allure.step("Выбор станции метро: {metro_station}")
     def _select_metro_station(self, metro_station):
-        metro_field = self.wait.until(
-            EC.element_to_be_clickable(OrderPageLocators.METRO_FIELD)
-        )
+        metro_field = self.wait_until_clickable(OrderPageLocators.METRO_FIELD)
         metro_field.click()
         metro_field.clear()
         metro_field.send_keys(metro_station)
 
-        metro_option = (
-            OrderPageLocators.METRO_OPTION[0],
-            OrderPageLocators.METRO_OPTION[1].format(metro_station),
+        metro_option = self.format_locators(
+            OrderPageLocators.METRO_OPTION, metro_station
         )
         try:
             self.reliable_click(metro_option)
-        except TimeoutException as e: # <--- ИСПРАВЛЕННЫЙ ОТСТУП
-            allure.attach(f"Не удалось выбрать станцию через клик. Падаем обратно на ввод. Ошибка: {e}", "Fallback Log",
-                          attachment_type=allure.attachment_type.TEXT)
+        except TimeoutException:
             metro_field.send_keys(Keys.ARROW_DOWN)
             metro_field.send_keys(Keys.ENTER)
 
@@ -49,33 +43,27 @@ class OrderPage(BasePage):
     @allure.step("Клик на кнопку Далее")
     def click_next(self):
         self.reliable_click(OrderPageLocators.NEXT_BUTTON)
-        self.wait.until(EC.visibility_of_element_located(OrderPageLocators.DATE_FIELD))
+        self.wait_until_visible(OrderPageLocators.DATE_FIELD)
 
     @staticmethod
-    def _to_data_day(date: str) -> str:
-        """Преобразует 01.06.2026 в формат data-day календаря: 1.6.2026."""
+    def _to_data_day(date):
         day, month, year = date.split(".")
         return f"{int(day)}.{int(month)}.{year}"
 
     def _close_datepicker(self):
-        try:
-            self.wait.until(
-                EC.invisibility_of_element_located((By.CSS_SELECTOR, ".react-datepicker"))
-            )
-        except TimeoutException:
-            self.driver.find_element(*OrderPageLocators.DATE_FIELD).send_keys(Keys.ESCAPE)
+        if not self.wait_until_invisible(OrderPageLocators.DATEPICKER):
+            self.send_escape_to_element(OrderPageLocators.DATE_FIELD)
 
     @allure.step("Выбор даты доставки: {date}")
-    def _select_delivery_date(self, date: str):
+    def _select_delivery_date(self, date):
         date_field = self.find_element_with_wait(OrderPageLocators.DATE_FIELD)
         date_field.click()
         date_field.clear()
         date_field.send_keys(date)
 
-        data_day = self._to_data_day(date)
-        day_locator = (
-            OrderPageLocators.DATEPICKER_DAY[0],
-            OrderPageLocators.DATEPICKER_DAY[1].format(data_day),
+        day_locator = self.format_locators(
+            OrderPageLocators.DATEPICKER_DAY,
+            self._to_data_day(date),
         )
         try:
             self.reliable_click(day_locator)
@@ -84,28 +72,13 @@ class OrderPage(BasePage):
         self._close_datepicker()
 
     @allure.step("Выбор срока аренды: {period}")
-    def _select_rental_period(self, period: str):
-        dropdown = self.wait.until(
-            lambda driver: next(
-                (
-                    element
-                    for element in driver.find_elements(*OrderPageLocators.RENTAL_PERIOD_DROPDOWN)
-                    if element.is_displayed()
-                ),
-                None,
-            )
-        )
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});", dropdown
-        )
-        dropdown.click()
-        self.wait.until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "div.Dropdown-menu"))
-        )
+    def _select_rental_period(self, period):
+        dropdown = self.find_visible_element(OrderPageLocators.RENTAL_PERIOD_DROPDOWN)
+        self.click_element(dropdown)
+        self.wait_until_present(OrderPageLocators.DROPDOWN_MENU)
 
-        period_locator = (
-            By.XPATH,
-            f"//div[contains(@class, 'Dropdown-option') and normalize-space()='{period}']",
+        period_locator = self.format_locators(
+            OrderPageLocators.RENTAL_PERIOD_OPTION, period
         )
         self.reliable_click(period_locator)
 
@@ -130,6 +103,6 @@ class OrderPage(BasePage):
     def confirm_order(self):
         self.reliable_click(OrderPageLocators.CONFIRM_BUTTON)
 
-    @allure.step("Проверка, что появилось сообщение об успешном заказе")
+    @allure.step("Проверка сообщения об успешном заказе")
     def is_order_success_displayed(self):
-        return self.find_element_with_wait(OrderPageLocators.SUCCESS_MODAL).is_displayed()
+        return self.is_element_visible(OrderPageLocators.SUCCESS_MODAL)
