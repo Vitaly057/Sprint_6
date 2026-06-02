@@ -2,6 +2,7 @@ import allure
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.keys import Keys
 
+from helpers.date_helpers import to_data_day
 from locators.order_page_locators import OrderPageLocators
 from pages.base_page import BasePage
 
@@ -45,11 +46,6 @@ class OrderPage(BasePage):
         self.reliable_click(OrderPageLocators.NEXT_BUTTON)
         self.wait_until_visible(OrderPageLocators.DATE_FIELD)
 
-    @staticmethod
-    def _to_data_day(date):
-        day, month, year = date.split(".")
-        return f"{int(day)}.{int(month)}.{year}"
-
     def _close_datepicker(self):
         if not self.wait_until_invisible(OrderPageLocators.DATEPICKER):
             self.send_escape_to_element(OrderPageLocators.DATE_FIELD)
@@ -63,7 +59,7 @@ class OrderPage(BasePage):
 
         day_locator = self.format_locators(
             OrderPageLocators.DATEPICKER_DAY,
-            self._to_data_day(date),
+            to_data_day(date),
         )
         try:
             self.reliable_click(day_locator)
